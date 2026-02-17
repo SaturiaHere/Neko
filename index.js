@@ -96,7 +96,7 @@ async function connectVoice(guildId, channelId) {
   }
 }
 
-client.once("ready", async () => {
+client.once("clientReady", async () => {
   try {
     // Connect ke MongoDB
     await global.db.connect()
