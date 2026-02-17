@@ -1,8 +1,7 @@
 import { Client, GatewayIntentBits, PermissionsBitField } from "discord.js"
 import { joinVoiceChannel, VoiceConnectionStatus, entersState } from "@discordjs/voice"
 import yargs from "yargs/yargs"
-import { Low, JSONFile } from "lowdb"
-import _ from "lodash"
+import db from "./lib/db.js"
 import fs from "fs/promises"
 import path from "path"
 import { pathToFileURL } from "url"
@@ -11,36 +10,11 @@ global.opts = new Object(
   yargs(process.argv.slice(2)).exitProcess(false).parse(),
 )
 
-global.db = new Low(new JSONFile("./database/database.json"))
+global.db = db
 global.DATABASE = global.db
 
 global.loadDatabase = async function loadDatabase() {
-  if (global.db.READ) {
-    return new Promise((resolve) => {
-      const interval = setInterval(async () => {
-        if (!global.db.READ) {
-          clearInterval(interval)
-          resolve(
-            global.db.data == null
-              ? await global.loadDatabase()
-              : global.db.data,
-          )
-        }
-      }, 100)
-    })
-  }
-
-  if (global.db.data != null) return global.db.data
-
-  try {
-    global.db.READ = true
-    await global.db.read()
-    global.db.data = global.db.data || {}
-    global.db.chain = _.chain(global.db.data)
-    return global.db.data
-  } finally {
-    global.db.READ = false
-  }
+  return await global.db.read()
 }
 
 const TOKEN = process.env.TOKEN
@@ -123,6 +97,14 @@ async function connectVoice(guildId, channelId) {
 }
 
 client.once("ready", async () => {
+  try {
+    // Connect ke MongoDB
+    await global.db.connect()
+  } catch (err) {
+    console.error("Gagal mulai bot:", err.message)
+    process.exit(1)
+  }
+
   await loadCommands()
   await loadDatabase()
 

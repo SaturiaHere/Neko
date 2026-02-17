@@ -48,16 +48,21 @@ export default {
           ephemeral: true
         })
 
-      if (!global.db.data.voice) global.db.data.voice = {}
-      global.db.data.voice[msg.guild.id] = { channelId }
-      await global.db.write()
+      try {
+        await global.db.setChannel(msg.guild.id, channelId)
+        await connectVoice(msg.guild.id, channelId)
 
-      await connectVoice(msg.guild.id, channelId)
-
-      await interaction.update({
-        content: `Voice diset ke ${channel.name}`,
-        components: []
-      })
+        await interaction.update({
+          content: `Voice diset ke ${channel.name}`,
+          components: []
+        })
+      } catch (err) {
+        console.error("Gagal menyimpan voice channel:", err)
+        await interaction.reply({
+          content: "Gagal menyimpan konfigurasi.",
+          ephemeral: true
+        })
+      }
 
       collector.stop()
     })

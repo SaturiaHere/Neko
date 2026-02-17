@@ -15,9 +15,10 @@ export default {
       voiceConnections.delete(guildId)
     }
 
-    if (global.db.data.voice?.[guildId]) {
-      delete global.db.data.voice[guildId]
-      await global.db.write()
+    try {
+      await global.db.deleteChannel(guildId)
+    } catch (err) {
+      console.error("Gagal menghapus voice channel config:", err)
     }
 
     return msg.reply("Bot keluar dari voice dan config dihapus.")
