@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "type": "module",
   "dependencies": {
+    "@discordjs/voice": "latest",
+    "opusscript": "latest",
     "discord.js": "^14.16.3",
     "lowdb": "^2.1.0",
     "node-fetch": "^3.3.2",
