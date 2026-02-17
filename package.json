@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "dependencies": {
+    "@snazzah/davey": "latest",
     "@discordjs/voice": "latest",
     "opusscript": "latest",
     "discord.js": "^14.16.3",
