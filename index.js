@@ -43,7 +43,7 @@ global.loadDatabase = async function loadDatabase() {
   }
 }
 
-const TOKEN = "MTIyMDE1NTI4MzI1OTUyMzEwMg.GSdaap.gvf4ckovY6zUzorINtmsH8L994oXtfPDsspx4E";
+const TOKEN = process.env.TOKEN
 if (!TOKEN) {
   console.error("TOKEN tidak ditemukan.")
   process.exit(1)
