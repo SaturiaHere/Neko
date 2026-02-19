@@ -46,13 +46,13 @@ async function loadCommands(dir = path.join(process.cwd(), "commands")) {
       } else if (ent.isFile() && full.endsWith(".js")) {
         try {
           const mod = await import(pathToFileURL(full).href)
-          const cmd = mod.defau{
+          const cmd = mod.default || mod
+          if (cmd && cmd.name) {
             commands.set(cmd.name, cmd)
             if (cmd.data) {
               slashCommands.set(cmd.data.name, cmd)
             }
           }
-          if (cmd && cmd.name) commands.set(cmd.name, cmd)
         } catch (e) {
           console.error("Failed to load command:", full, e)
         }
@@ -97,7 +97,12 @@ async function connectVoice(guildId, channelId) {
 
     console.log(`Join voice di guild ${guildId}`)
 
-  } catch (erready", async () => {
+  } catch (err) {
+    console.log(`Gagal join guild ${guildId}`, err)
+  }
+}
+
+client.once("ready", async () => {
   try {
     // Connect ke MongoDB
     await global.db.connect()
@@ -128,11 +133,6 @@ async function connectVoice(guildId, channelId) {
   } catch (err) {
     console.error("Gagal register slash commands:", err)
   }
-  await loadDatabase()
-
-  if (!global.db.data.voice) global.db.data.voice = {}
-
-  console.log(`Bot online sebagai ${client.user.tag}`)
 
   for (const guildId of Object.keys(global.db.data.voice)) {
     const channelId = global.db.data.voice[guildId]?.channelId
@@ -143,27 +143,7 @@ async function connectVoice(guildId, channelId) {
 })
 
 client.on("messageCreate", async (msg) => {
-  if (!on("interactionCreate", async (interaction) => {
-  if (!interaction.isChatInputCommand()) return
-  if (!interaction.guild) return
-
-  const cmd = slashCommands.get(interaction.commandName)
-  if (!cmd) return
-
-  try {
-    await cmd.executeSlash(interaction, { commands, connectVoice, voiceConnections })
-  } catch (e) {
-    console.error(`Error executing slash command ${interaction.commandName}:`, e)
-    const reply = { content: "Terjadi masalah saat menjalankan perintah.", ephemeral: true }
-    if (interaction.replied || interaction.deferred) {
-      await interaction.followUp(reply)
-    } else {
-      await interaction.reply(reply)
-    }
-  }
-})
-
-client.msg.guild) return
+  if (!msg.guild) return
   if (msg.author.bot) return
 
   const prefix = "."
@@ -181,6 +161,26 @@ client.msg.guild) return
       try { await msg.reply("Terjadi masalah saat menjalankan perintah.") } catch {}
     }
     return
+  }
+})
+
+client.on("interactionCreate", async (interaction) => {
+  if (!interaction.isChatInputCommand()) return
+  if (!interaction.guild) return
+
+  const cmd = slashCommands.get(interaction.commandName)
+  if (!cmd) return
+
+  try {
+    await cmd.executeSlash(interaction, { commands, connectVoice, voiceConnections })
+  } catch (e) {
+    console.error(`Error executing slash command ${interaction.commandName}:`, e)
+    const reply = { content: "Terjadi masalah saat menjalankan perintah.", ephemeral: true }
+    if (interaction.replied || interaction.deferred) {
+      await interaction.followUp(reply)
+    } else {
+      await interaction.reply(reply)
+    }
   }
 })
 
