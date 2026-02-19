@@ -1,4 +1,4 @@
-import { Client, GatewayIntentBits, PermissionsBitField } from "discord.js"
+import { Client, GatewayIntentBits, PermissionsBitField, REST, Routes } from "discord.js"
 import { joinVoiceChannel, VoiceConnectionStatus, entersState } from "@discordjs/voice"
 import yargs from "yargs/yargs"
 import db from "./lib/db.js"
@@ -33,6 +33,7 @@ const client = new Client({
 })
 
 const commands = new Map()
+const slashCommands = new Map()
 const voiceConnections = new Map()
 
 async function loadCommands(dir = path.join(process.cwd(), "commands")) {
@@ -45,7 +46,12 @@ async function loadCommands(dir = path.join(process.cwd(), "commands")) {
       } else if (ent.isFile() && full.endsWith(".js")) {
         try {
           const mod = await import(pathToFileURL(full).href)
-          const cmd = mod.default || mod
+          const cmd = mod.defau{
+            commands.set(cmd.name, cmd)
+            if (cmd.data) {
+              slashCommands.set(cmd.data.name, cmd)
+            }
+          }
           if (cmd && cmd.name) commands.set(cmd.name, cmd)
         } catch (e) {
           console.error("Failed to load command:", full, e)
@@ -91,12 +97,7 @@ async function connectVoice(guildId, channelId) {
 
     console.log(`Join voice di guild ${guildId}`)
 
-  } catch (err) {
-    console.log(`Gagal join guild ${guildId}`, err)
-  }
-}
-
-client.once("clientReady", async () => {
+  } catch (erready", async () => {
   try {
     // Connect ke MongoDB
     await global.db.connect()
@@ -112,6 +113,27 @@ client.once("clientReady", async () => {
 
   console.log(`Bot online sebagai ${client.user.tag}`)
 
+  // Register slash commands
+  try {
+    const slashCommandsData = Array.from(slashCommands.values())
+      .map(cmd => cmd.data.toJSON())
+    
+    const rest = new REST({ version: "10" }).setToken(TOKEN)
+    
+    await rest.put(
+      Routes.applicationCommands(client.user.id),
+      { body: slashCommandsData }
+    )
+    console.log(`Registered ${slashCommandsData.length} slash commands`)
+  } catch (err) {
+    console.error("Gagal register slash commands:", err)
+  }
+  await loadDatabase()
+
+  if (!global.db.data.voice) global.db.data.voice = {}
+
+  console.log(`Bot online sebagai ${client.user.tag}`)
+
   for (const guildId of Object.keys(global.db.data.voice)) {
     const channelId = global.db.data.voice[guildId]?.channelId
     if (channelId) {
@@ -121,7 +143,27 @@ client.once("clientReady", async () => {
 })
 
 client.on("messageCreate", async (msg) => {
-  if (!msg.guild) return
+  if (!on("interactionCreate", async (interaction) => {
+  if (!interaction.isChatInputCommand()) return
+  if (!interaction.guild) return
+
+  const cmd = slashCommands.get(interaction.commandName)
+  if (!cmd) return
+
+  try {
+    await cmd.executeSlash(interaction, { commands, connectVoice, voiceConnections })
+  } catch (e) {
+    console.error(`Error executing slash command ${interaction.commandName}:`, e)
+    const reply = { content: "Terjadi masalah saat menjalankan perintah.", ephemeral: true }
+    if (interaction.replied || interaction.deferred) {
+      await interaction.followUp(reply)
+    } else {
+      await interaction.reply(reply)
+    }
+  }
+})
+
+client.msg.guild) return
   if (msg.author.bot) return
 
   const prefix = "."
